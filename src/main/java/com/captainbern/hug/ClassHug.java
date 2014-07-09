@@ -274,25 +274,21 @@ public class ClassHug {
         codeStream.writeShort(this.interfaces.length);
         for (Interface iface : this.interfaces) {
             codeStream.write(iface.getBytes());
-            System.out.println(iface.getValue());
         }
 
         codeStream.writeShort(this.fields.length);
         for (Member field : this.fields) {
             codeStream.write(field.getBytes());
-            System.out.println(field.getName() + " = " + field.getDescriptor());
         }
 
         codeStream.writeShort(this.methods.length);
         for (Member method : this.methods) {
             codeStream.write(method.getBytes());
-            System.out.println(method.getName() + " = " + method.getDescriptor());
         }
 
         codeStream.writeShort(this.attributes.length);
         for (Attribute attribute : this.attributes) {
             codeStream.write(attribute.getBytes());
-            System.out.println(attribute.getType());
         }
 
         codeStream.flush();
