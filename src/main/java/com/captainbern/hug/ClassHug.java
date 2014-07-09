@@ -190,7 +190,7 @@ public class ClassHug {
      * @param inputStream
      */
     public ClassHug(InputStream inputStream) {
-        this(toBytes(inputStream, true));
+        this(toBytes(inputStream, false));
     }
 
     /**
