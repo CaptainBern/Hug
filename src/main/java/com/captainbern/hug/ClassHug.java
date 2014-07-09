@@ -168,9 +168,7 @@ public class ClassHug {
             throw new RuntimeException("Failed to hug class: " + b.toString() + "!", e);
         } finally {
             try {
-                if (inputStream != null) {
-                    inputStream.close();
-                }
+                inputStream.close();
             } catch (IOException e) {
                 // We'll just swallow this... For now.
             }
