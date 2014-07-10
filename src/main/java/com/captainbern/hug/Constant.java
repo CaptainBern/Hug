@@ -17,6 +17,8 @@
 
 package com.captainbern.hug;
 
+import java.util.List;
+
 public class Constant {
 
     // Constant op-codes
@@ -45,9 +47,9 @@ public class Constant {
     private int index;
     private byte[] data;
 
-    private Constant[] pool;
+    private List<Constant> pool;
 
-    public Constant(byte type, int index, byte[] data, Constant[] pool) {
+    public Constant(byte type, int index, byte[] data, List<Constant> pool) {
         this.type = type;
         this.index = index;
         this.data = data;
@@ -97,7 +99,7 @@ public class Constant {
         }
     }
 
-    public Constant[] getPool() {
+    public List<Constant> getPool() {
         return this.pool;
     }
 

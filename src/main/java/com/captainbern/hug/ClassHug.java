@@ -18,6 +18,9 @@
 package com.captainbern.hug;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import static com.captainbern.hug.Constant.*;
 
@@ -40,7 +43,7 @@ public class ClassHug {
     private int major;
 
     // A very, very basic ConstantPool implementation
-    private Constant[] pool;
+    private List<Constant> pool;
 
     // The access-flags of this class
     private int accessFlags;
@@ -52,16 +55,16 @@ public class ClassHug {
     private int superClass;
 
     // The interfaces, if any
-    private Interface[] interfaces;
+    private List<Interface> interfaces;
 
     // The fields
-    private Member[] fields;
+    private List<Member> fields;
 
     // Methods
-    private Member[] methods;
+    private List<Member> methods;
 
     // The attributes or "metadata"
-    private Attribute[] attributes;
+    private List<Attribute> attributes;
 
     // If, for some reason, you need the "old" bytecode, here it is
     private byte[] code;
@@ -90,24 +93,26 @@ public class ClassHug {
             if (major > 0x34) // Lolwat, seems like someone compiled this class with JDK 9 or above. (FYI; We're at 8 now)
                 throw new RuntimeException("Unsupported class file!");
 
-            this.pool = new Constant[inputStream.readUnsignedShort()];
+            int poolSize = inputStream.readUnsignedShort();
+            this.pool = new LinkedList<Constant>();
+            this.pool.add(0, null); // Reserved by the JVM
 
             // The first item in the pool is reserved by the jvm
-            for (int i = 1; i < pool.length; i++) {
+            for (int i = 1; i < poolSize; i++) {
                 // The type
                 byte type = inputStream.readByte();
                 // Used to read values with a bigger size blah
                 byte[] data;
                 switch (type) {
                     case CONSTANT_Utf8:
-                        pool[i] = new Constant(type, i, inputStream.readUTF().getBytes(), this.pool);
+                        this.pool.add(i, new Constant(type, i, inputStream.readUTF().getBytes(), this.pool));
                         break;
                     case CONSTANT_Class:
                     case CONSTANT_String:
                     case CONSTANT_MethodType:
                         data = new byte[2];
                         inputStream.readFully(data);
-                        pool[i] = new Constant(type, i, data, this.pool);
+                        this.pool.add(i, new Constant(type, i, data, this.pool));
                         break;
                     case CONSTANT_Integer:
                     case CONSTANT_Float:
@@ -118,19 +123,19 @@ public class ClassHug {
                     case CONSTANT_InvokeDynamic:
                         data = new byte[4];
                         inputStream.readFully(data);
-                        pool[i] = new Constant(type, i, data, this.pool);
+                        this.pool.add(i, new Constant(type, i, data, this.pool));
                         break;
                     case CONSTANT_Long:
                     case CONSTANT_Double:
                         data = new byte[8];
                         inputStream.readFully(data);
-                        pool[i] = new Constant(type, i, data, this.pool);
+                        this.pool.add(i, new Constant(type, i, data, this.pool));
                         i++;
                         break;
                     case CONSTANT_MethodHandle:
                         data = new byte[3];
                         inputStream.readFully(data);
-                        pool[i] = new Constant(type, i, data, this.pool);
+                        this.pool.add(i, new Constant(type, i, data, this.pool));
                         break;
                     default:
                         throw new RuntimeException("Illegal constant-type: " + type + "!");
@@ -141,27 +146,31 @@ public class ClassHug {
             this.thisClass = inputStream.readUnsignedShort();
             this.superClass = inputStream.readUnsignedShort();
 
-            this.interfaces = new Interface[inputStream.readUnsignedShort()];
-            for (int i = 0; i < this.interfaces.length; i++) {
-                this.interfaces[i] = new Interface(this.pool[inputStream.readUnsignedShort()]);
+            int interfaceCount = inputStream.readUnsignedShort();
+            this.interfaces = new ArrayList<Interface>();
+            for (int i = 0; i < interfaceCount; i++) {
+                this.interfaces.add(new Interface(this.pool.get(inputStream.readUnsignedShort())));
             }
 
-            this.fields = new Member[inputStream.readUnsignedShort()];
-            for (int i = 0; i < this.fields.length; i++) {
-                this.fields[i] = new Member(inputStream, this.pool);
+            int fieldCount = inputStream.readUnsignedShort();
+            this.fields = new ArrayList<Member>();
+            for (int i = 0; i < fieldCount; i++) {
+                this.fields.add(new Member(inputStream, this.pool));
             }
 
-            this.methods = new Member[inputStream.readUnsignedShort()];
-            for (int i = 0; i < this.methods.length; i++) {
-                this.methods[i] = new Member(inputStream, this.pool);
+            int methodCount = inputStream.readUnsignedShort();
+            this.methods = new ArrayList<Member>();
+            for (int i = 0; i < methodCount; i++) {
+                this.methods.add(new Member(inputStream, this.pool));
             }
 
-            this.attributes = new Attribute[inputStream.readUnsignedShort()];
-            for (int i = 0; i < this.attributes.length; i++) {
+            int attributeCount = inputStream.readUnsignedShort();
+            this.attributes = new ArrayList<Attribute>();
+            for (int i = 0; i < attributeCount; i++) {
                 int index = inputStream.readUnsignedShort();
                 byte[] data = new byte[inputStream.readInt()];
                 inputStream.readFully(data);
-                this.attributes[i] = new Attribute(pool[index], data);
+                this.attributes.add(new Attribute(pool.get(index), data));
             }
 
         } catch (Exception e) {
@@ -257,9 +266,9 @@ public class ClassHug {
         codeStream.writeShort(this.minor);
         codeStream.writeShort(this.major);
 
-        codeStream.writeShort(this.pool.length);
-        for (int i = 1; i < this.pool.length; i++) {
-            Constant constant = this.pool[i];
+        codeStream.writeShort(this.pool.size());
+        for (int i = 1; i < this.pool.size(); i++) {
+            Constant constant = this.pool.get(i);
             if (constant != null) {
                 codeStream.write(constant.getBytes());
             }
@@ -269,22 +278,22 @@ public class ClassHug {
         codeStream.writeShort(this.thisClass);
         codeStream.writeShort(this.superClass);
 
-        codeStream.writeShort(this.interfaces.length);
+        codeStream.writeShort(this.interfaces.size());
         for (Interface iface : this.interfaces) {
             codeStream.write(iface.getBytes());
         }
 
-        codeStream.writeShort(this.fields.length);
+        codeStream.writeShort(this.fields.size());
         for (Member field : this.fields) {
             codeStream.write(field.getBytes());
         }
 
-        codeStream.writeShort(this.methods.length);
+        codeStream.writeShort(this.methods.size());
         for (Member method : this.methods) {
             codeStream.write(method.getBytes());
         }
 
-        codeStream.writeShort(this.attributes.length);
+        codeStream.writeShort(this.attributes.size());
         for (Attribute attribute : this.attributes) {
             codeStream.write(attribute.getBytes());
         }
@@ -300,7 +309,7 @@ public class ClassHug {
         return this.code;
     }
 
-    public Constant[] getConstantPool() {
+    public List<Constant> getConstantPool() {
         return this.pool;
     }
 
@@ -325,13 +334,13 @@ public class ClassHug {
      * @return
      */
     public String getClassName() {
-        Constant constant = this.pool[this.thisClass];
+        Constant constant = this.pool.get(this.thisClass);
 
         if (constant.getType() == CONSTANT_Class) {
             byte[] val = constant.getRawData();
             int index = ((val[0] << 8) | (val[1]));
 
-            Constant utf8 = this.pool[index];
+            Constant utf8 = this.pool.get(index);
             if (utf8.getType() == CONSTANT_Utf8)
                 return utf8.rawStringValue();
         }
@@ -344,13 +353,13 @@ public class ClassHug {
      * @param className
      */
     public void setClassName(String className) {
-        Constant constant = this.pool[this.thisClass];
+        Constant constant = this.pool.get(this.thisClass);
 
         if (constant.getType() == CONSTANT_Class) {
             byte[] val = constant.getRawData();
             int index = ((val[0] << 8) | val[1]);
 
-            Constant utf8 = this.pool[index];
+            Constant utf8 = this.pool.get(index);
             if (utf8.getType() == CONSTANT_Utf8) {
                 utf8.setRawData(className.getBytes());
                 return;
@@ -365,13 +374,13 @@ public class ClassHug {
      * @return
      */
     public String getSuperClassName() {
-        Constant constant = this.pool[this.superClass];
+        Constant constant = this.pool.get(this.superClass);
 
         if (constant.getType() == CONSTANT_Class) {
             byte[] val = constant.getRawData();
             int index = ((val[0] << 8) | (val[1]));
 
-            Constant utf8 = this.pool[index];
+            Constant utf8 = this.pool.get(index);
             if (utf8.getType() == CONSTANT_Utf8)
                 return utf8.rawStringValue();
         }
@@ -384,13 +393,13 @@ public class ClassHug {
      * @param className
      */
     public void setSuperClassName(String className) {
-        Constant constant = this.pool[this.superClass];
+        Constant constant = this.pool.get(this.superClass);
 
         if (constant.getType() == CONSTANT_Class) {
             byte[] val = constant.getRawData();
             int index = ((val[0] << 8) | val[1]);
 
-            Constant utf8 = this.pool[index];
+            Constant utf8 = this.pool.get(index);
             if (utf8.getType() == CONSTANT_Utf8) {
                 utf8.setRawData(className.getBytes());
                 return;
@@ -404,7 +413,7 @@ public class ClassHug {
      * Returns the interfaces of this class
      * @return
      */
-    public Interface[] getInterfaces() {
+    public List<Interface> getInterfaces() {
         return this.interfaces;
     }
 
@@ -412,7 +421,7 @@ public class ClassHug {
      * Returns the fields of this class
      * @return
      */
-    public Member[] getFields() {
+    public List<Member> getFields() {
         return this.fields;
     }
 
@@ -420,7 +429,7 @@ public class ClassHug {
      * Returns the methods of this class
      * @return
      */
-    public Member[] getMethods() {
+    public List<Member> getMethods() {
         return this.methods;
     }
 
@@ -428,7 +437,7 @@ public class ClassHug {
      * Returns the attributes or "metadata" of this class
      * @return
      */
-    public Attribute[] getAttributes() {
+    public List<Attribute> getAttributes() {
         return this.attributes;
     }
 

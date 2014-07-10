@@ -46,4 +46,9 @@ public class Attribute {
     public void setData(byte[] data) {
         this.data = data;
     }
+
+    @Override
+    public String toString() {
+        return this.type.rawStringValue() + "(" + this.data + ")";
+    }
 }
