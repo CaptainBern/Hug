@@ -117,13 +117,13 @@ public class Constant {
             case CONSTANT_Utf8:
                 return this.rawStringValue();
             case CONSTANT_Integer:
-                return "" + Bytes.toInt(this.data);
+                return String.valueOf(Bytes.toInt(this.data));
             case CONSTANT_Float:
-                return "" + Bytes.toFloat(this.data);
+                return String.valueOf(Bytes.toFloat(this.data));
             case CONSTANT_Long:
-                return "" + Bytes.toLong(this.data);
+                return String.valueOf(Bytes.toLong(this.data));
             case CONSTANT_Double:
-                return "" + Bytes.toDouble(this.data);
+                return String.valueOf(Bytes.toDouble(this.data));
             case CONSTANT_Class:
             case CONSTANT_String:
             case CONSTANT_MethodType:
