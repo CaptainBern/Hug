@@ -116,6 +116,14 @@ public class Constant {
         switch (this.type) {
             case CONSTANT_Utf8:
                 return this.rawStringValue();
+            case CONSTANT_Integer:
+                return "" + Bytes.toInt(this.data);
+            case CONSTANT_Float:
+                return "" + Bytes.toFloat(this.data);
+            case CONSTANT_Long:
+                return "" + Bytes.toLong(this.data);
+            case CONSTANT_Double:
+                return "" + Bytes.toDouble(this.data);
             case CONSTANT_Class:
             case CONSTANT_String:
             case CONSTANT_MethodType:
@@ -150,6 +158,16 @@ public class Constant {
                 index = Bytes.toShort(kindIndexBits);
 
                 return kind + "#" + this.pool.get(index).toString();
+            case CONSTANT_InvokeDynamic:
+                int bootstrap_index;
+                int nameTypeIndex;
+                byte[] indexBits = new byte[2];
+                System.arraycopy(this.data, 0, indexBits, 0, 2);
+                bootstrap_index = Bytes.toShort(indexBits);
+                System.arraycopy(this.data, 2, indexBits, 0, 2);
+                nameTypeIndex = Bytes.toShort(indexBits);
+
+                return bootstrap_index + "$" + this.pool.get(nameTypeIndex).toString();
             default:
                 return "<Unknown>";
         }
