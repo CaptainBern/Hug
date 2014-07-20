@@ -44,7 +44,9 @@ public class Constant {
     };
 
     private byte type;
+
     private int index;
+
     private byte[] data;
 
     private List<Constant> pool;
@@ -53,6 +55,7 @@ public class Constant {
         this.type = type;
         this.index = index;
         this.data = data;
+        this.pool = pool;
     }
 
     public byte getType() {
@@ -103,8 +106,52 @@ public class Constant {
         return this.pool;
     }
 
+    public boolean isEqualTo(Constant other) {
+        return other.toString().equals(this.toString());
+    }
+
     @Override
     public String toString() {
-        return "{\"type\":\"" + CONSTANT_NAMES[this.type] + "\",\"value\":\"" + rawStringValue() + "\"}";
+
+        switch (this.type) {
+            case CONSTANT_Utf8:
+                return this.rawStringValue();
+            case CONSTANT_Class:
+            case CONSTANT_String:
+            case CONSTANT_MethodType:
+                return this.pool.get(Bytes.toShort(this.data)).rawStringValue();
+            case CONSTANT_FieldRef:
+            case CONSTANT_MethodRef:
+            case CONSTANT_InterfaceMethodRef:
+                int classIndex;
+                int nameAndTypeIndex;
+                byte[] indexNameAndTypeBits = new byte[2];
+                System.arraycopy(this.data, 0, indexNameAndTypeBits, 0, 2);
+                classIndex = Bytes.toShort(indexNameAndTypeBits);
+                System.arraycopy(this.data, 2, indexNameAndTypeBits, 0, 2);
+                nameAndTypeIndex = Bytes.toShort(indexNameAndTypeBits);
+
+                return this.pool.get(classIndex).toString() + "&" + this.pool.get(nameAndTypeIndex).toString();
+            case CONSTANT_NameAndType:
+                byte[] nameTypeBits = new byte[2];
+                System.arraycopy(this.data, 0, nameTypeBits, 0, 2);
+                int nameIndex = Bytes.toShort(nameTypeBits);
+                System.arraycopy(this.data, 2, nameTypeBits, 0, 2);
+                int typeIndex = Bytes.toShort(nameTypeBits);
+
+                return this.pool.get(nameIndex).rawStringValue() + "%" + this.pool.get(typeIndex).rawStringValue();
+            case CONSTANT_MethodHandle:
+                int kind;
+                int index;
+                byte[] kindIndexBits = new byte[2];
+                System.arraycopy(this.data, 0, kindIndexBits, 0, 2);
+                kind = Bytes.toShort(kindIndexBits);
+                System.arraycopy(this.data, 2, kindIndexBits, 0, 2);
+                index = Bytes.toShort(kindIndexBits);
+
+                return kind + "#" + this.pool.get(index).toString();
+            default:
+                return "<Unknown>";
+        }
     }
 }

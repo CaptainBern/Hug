@@ -17,38 +17,37 @@
 
 package com.captainbern.hug;
 
-public class Attribute {
+public abstract class Attribute {
 
-    private Constant type;
-    private byte[] data;
+    protected Constant type;
+    protected int length;
 
-    public Attribute(Constant type, byte[] data) {
+    public Attribute(Constant type, int length) {
         this.type = type;
-        this.data = data;
+        this.length = length;
     }
 
     public byte[] getBytes() {
-        return Bytes.merge(Bytes.toByteArray((short) this.type.getIndex()), Bytes.merge(Bytes.toByteArray(this.data.length), data));
+        return Bytes.merge(Bytes.toByteArray((short) this.type.getIndex()), Bytes.toByteArray(this.length));
     }
 
     public String getType() {
         return this.type.rawStringValue();
     }
 
+    public void setType(String type) {
+        this.type.getPool().set(this.type.getIndex(), this.type = new Constant(
+                Constant.CONSTANT_Utf8,
+                this.type.getIndex(),
+                type.getBytes(),
+                this.type.getPool()));
+    }
+
     public int getLength() {
-        return this.data.length;
+        return this.length;
     }
 
-    public byte[] getData() {
-        return this.data;
-    }
+    public abstract byte[] getData();
 
-    public void setData(byte[] data) {
-        this.data = data;
-    }
-
-    @Override
-    public String toString() {
-        return this.type.rawStringValue() + "(" + this.data + ")";
-    }
+    public abstract void setData(byte[] data);
 }

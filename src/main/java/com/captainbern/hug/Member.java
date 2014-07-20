@@ -17,6 +17,8 @@
 
 package com.captainbern.hug;
 
+import com.captainbern.hug.attribute.DefaultAttribute;
+
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -40,9 +42,7 @@ public class Member {
         this.metadata = new ArrayList<Attribute>();
         for (int i = 0; i < metadataCount; i++) {
             int index = inputStream.readUnsignedShort();
-            byte[] data = new byte[inputStream.readInt()];
-            inputStream.readFully(data);
-            this.metadata.add(new Attribute(pool.get(index), data));
+            this.metadata.add(new DefaultAttribute(inputStream, pool.get(index)));
         }
     }
 
