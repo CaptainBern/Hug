@@ -11,6 +11,11 @@ public class DefaultAttribute extends Attribute {
 
     private byte[] data;
 
+    public DefaultAttribute(Constant type, byte[] data) {
+        super(type, data.length);
+        this.data = data;
+    }
+
     public DefaultAttribute(DataInputStream inputStream, Constant type) throws IOException {
         super(type, inputStream.readInt());
         this.data = new byte[this.length];

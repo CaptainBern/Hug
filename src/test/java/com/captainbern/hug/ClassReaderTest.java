@@ -9,27 +9,27 @@ public class ClassReaderTest {
         String source = "com.captainbern.hug.TestClass";
         ClassReader hug = new ClassReader(source);
 
-        System.out.println("ClassName: " + hug.getClassName());
+        log("ClassName: " + hug.getClassName());
 
         for (Constant constant : hug.getConstantPool()) {
             if (constant != null)
-                System.out.println(constant.toString());
+                log(constant.toString());
         }
 
         for (Member field : hug.getFields()) {
             for (Attribute attribute : field.getMetadata()) {
-                System.out.println(attribute.getType());
+                log(attribute.getType());
             }
 
-            System.out.println(field.getName() + ", " + field.getDescriptor());
+            log(field.getName() + ", " + field.getDescriptor());
         }
 
         for (Member method : hug.getMethods()) {
             for (Attribute attribute : method.getMetadata()) {
-                System.out.println(attribute.getType());
+                log(attribute.getType());
             }
 
-            System.out.println(method.getName() + ", " + method.getDescriptor());
+            log(method.getName() + ", " + method.getDescriptor());
         }
 
         Class clazz = hug.defineClass();

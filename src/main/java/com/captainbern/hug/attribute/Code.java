@@ -6,7 +6,7 @@ import com.captainbern.hug.TryCatchBlock;
 
 import java.util.List;
 
-public class Code {
+public class Code extends DefaultAttribute {
 
     private int maxStack;
     private int maxLocals;
@@ -14,4 +14,7 @@ public class Code {
     private List<TryCatchBlock> exceptionTable;
     private List<Attribute> metadata;
 
+    public Code(Constant type, byte[] data) {
+        super(type, data);
+    }
 }

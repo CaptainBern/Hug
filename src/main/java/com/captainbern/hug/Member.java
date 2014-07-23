@@ -33,6 +33,13 @@ public class Member {
     private Constant descriptor; // Should be Utf8
     private List<Attribute> metadata;
 
+    public Member(int accessFlags, Constant name, Constant descriptor, List<Attribute> metadata) {
+        this.accessFlags = accessFlags;
+        this.name = name;
+        this.descriptor = descriptor;
+        this.metadata = metadata;
+    }
+
     public Member(DataInputStream inputStream, List<Constant> pool) throws IOException {
         this.accessFlags = inputStream.readUnsignedShort();
         this.name = pool.get(inputStream.readUnsignedShort());

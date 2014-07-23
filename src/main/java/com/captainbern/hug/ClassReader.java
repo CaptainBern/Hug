@@ -24,13 +24,11 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.captainbern.hug.Constant.*;
-
 /**
  * It's some very basic bytecode editing. Also note that "this class" refers to
  * the class that is being edited. (It does not refer to <i>this</i> class object.
  */
-public class ClassReader {
+public class ClassReader implements Opcodes {
 
     // The Magic of this class file. It'd better be cafebabe or else the party won't continue
     private int magic;
@@ -89,7 +87,7 @@ public class ClassReader {
             this.minor = inputStream.readUnsignedShort();
             this.major = inputStream.readUnsignedShort();
 
-            if (major > 0x34) // Lolwat, seems like someone compiled this class with JDK 9 or above. (FYI; We're at 8 now)
+            if (major > JDK_8) // Lolwat, seems like someone compiled this class with JDK 9 or above. (FYI; We're at 8 now)
                 throw new RuntimeException("Unsupported class file!");
 
             int poolSize = inputStream.readUnsignedShort();
@@ -115,9 +113,9 @@ public class ClassReader {
                         break;
                     case CONSTANT_Integer:
                     case CONSTANT_Float:
-                    case CONSTANT_FieldRef:
-                    case CONSTANT_MethodRef:
-                    case CONSTANT_InterfaceMethodRef:
+                    case CONSTANT_Fieldref:
+                    case CONSTANT_Methodref:
+                    case CONSTANT_InterfaceMethodref:
                     case CONSTANT_NameAndType:
                     case CONSTANT_InvokeDynamic:
                         data = new byte[4];

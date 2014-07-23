@@ -25,6 +25,11 @@ public class ClassVisitor {
             this.parent.visitAttribute(attribute);
     }
 
+    public void visitInterface(Interface iface) {
+        if (this.parent != null)
+            this.parent.visitInterface(iface);
+    }
+
     public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
         if (this.parent != null)
             return this.parent.visitField(access, name, desc, signature, value);

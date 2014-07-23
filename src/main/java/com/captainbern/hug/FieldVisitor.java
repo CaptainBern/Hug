@@ -1,7 +1,7 @@
 package com.captainbern.hug;
 
 public class FieldVisitor {
-
+    // TODO: Annotations etc...
     protected FieldVisitor parent;
 
     public FieldVisitor() {}
