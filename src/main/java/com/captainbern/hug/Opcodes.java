@@ -7,14 +7,14 @@ public interface Opcodes {
     /**
      * JDK versions
      */
-    public static final int JDK_1_1         = 0x2D; // Starting from 45 -> 52
-    public static final int JDK_1_2         = 0x2E;
-    public static final int JDK_1_3         = 0x2F;
-    public static final int JDK_1_4         = 0x30;
-    public static final int JDK_5           = 0x31;
-    public static final int JDK_6           = 0x32;
-    public static final int JDK_7           = 0x33;
-    public static final int JDK_8           = 0x34;
+    public static final int JDK_1_1         = 0 << 15 | 45; // Starting from 45 -> 52
+    public static final int JDK_1_2         = 0 << 16 | 46;
+    public static final int JDK_1_3         = 0 << 16 | 47;
+    public static final int JDK_1_4         = 0 << 16 | 48;
+    public static final int JDK_5           = 0 << 16 | 49;
+    public static final int JDK_6           = 0 << 16 | 50;
+    public static final int JDK_7           = 0 << 16 | 51;
+    public static final int JDK_8           = 0 << 16 | 52;
 
     /**
      * Opcodes

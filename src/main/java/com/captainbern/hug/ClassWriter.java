@@ -25,7 +25,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.*;
 
-public class ClassWriter extends ClassVisitor {
+public class ClassWriter extends ClassVisitor implements Opcodes {
 
     protected int version;
 
@@ -147,7 +147,7 @@ public class ClassWriter extends ClassVisitor {
 
         // Finally start writing the class
 
-        outputStream.writeInt(0xcafebabe);
+        outputStream.writeInt(JAVA_MAGIC);
 
         outputStream.writeInt(this.version);
 
@@ -195,6 +195,7 @@ public class ClassWriter extends ClassVisitor {
     private Map<String, Integer> utfToIndex = new HashMap<String, Integer>();   // Used to lookup UTF-8 values in the pool
     private Map<String, Integer> stringToIndex = new HashMap<String, Integer>(); // Used to lookup CONSTANT_String values in the pool
     private Map<String, Integer> natToIndex = new HashMap<String, Integer>(); // used to lookup nat values in the pool
+    private Map<String, Integer> cpToIndex = new HashMap<String, Integer>(); // Used to lookup field/methods stuff in the pool.
 
     protected Constant newUTF(String utf) {
         if (utf == null)
@@ -298,16 +299,76 @@ public class ClassWriter extends ClassVisitor {
         return result;
     }
 
-    protected Constant newField(int access, String name, String desc) {
-        return null;
+    protected Constant newFieldref(String className, String fieldName, String type) {
+        Constant result = null;
+
+        if (cpToIndex.containsKey(className + FIELDREF_DELIM + fieldName + NAT_DELIM + type)) {
+            result = this.constantPool.get(cpToIndex.get(className + FIELDREF_DELIM + fieldName + NAT_DELIM + type));
+        }
+
+        if (result == null) {
+            Constant classConstant = newClass(className);
+            Constant nameAndType = newNameAndType(fieldName, type);
+
+            this.index++;
+            result = new Constant(CONSTANT_Fieldref, this.index, Bytes.merge(
+                    Bytes.toByteArray((short) classConstant.getIndex()),
+                    Bytes.toByteArray((short) nameAndType.getIndex())
+            ), this.constantPool);
+
+            this.cpToIndex.put(className + FIELDREF_DELIM + fieldName + NAT_DELIM + type, result.getIndex());
+            this.constantPool.add(this.index, result);
+        }
+
+        return result;
     }
 
-    protected Constant newMethod(int access, String name, String desc) {
-        return null;
+    protected Constant newMethodref(String className, String methodName, String type) {
+        Constant result = null;
+
+        if (cpToIndex.containsKey(className + METHODREF_DELIM + methodName + NAT_DELIM + type)) {
+            result = this.constantPool.get(cpToIndex.get(className + METHODREF_DELIM + methodName + NAT_DELIM + type));
+        }
+
+        if (result == null) {
+            Constant classConstant = newClass(className);
+            Constant nameAndType = newNameAndType(methodName, type);
+
+            this.index++;
+            result = new Constant(CONSTANT_Methodref, this.index, Bytes.merge(
+                    Bytes.toByteArray((short) classConstant.getIndex()),
+                    Bytes.toByteArray((short) nameAndType.getIndex())
+            ), this.constantPool);
+
+            this.cpToIndex.put(className + METHODREF_DELIM + methodName + NAT_DELIM + type, result.getIndex());
+            this.constantPool.add(this.index, result);
+        }
+
+        return result;
     }
 
-    protected Constant newInterfaceMethodRef() {
-        return null;
+    protected Constant newInterfaceMethodref(String className, String methodName, String type) {
+        Constant result = null;
+
+        if (cpToIndex.containsKey(className + IMETHODREF_DELIM + methodName + NAT_DELIM + type)) {
+            result = this.constantPool.get(cpToIndex.get(className + IMETHODREF_DELIM + methodName + NAT_DELIM + type));
+        }
+
+        if (result == null) {
+            Constant classConstant = newClass(className);
+            Constant nameAndType = newNameAndType(methodName, type);
+
+            this.index++;
+            result = new Constant(CONSTANT_InterfaceMethodref, this.index, Bytes.merge(
+                    Bytes.toByteArray((short) classConstant.getIndex()),
+                    Bytes.toByteArray((short) nameAndType.getIndex())
+            ), this.constantPool);
+
+            this.cpToIndex.put(className + IMETHODREF_DELIM + methodName + NAT_DELIM + type, result.getIndex());
+            this.constantPool.add(this.index, result);
+        }
+
+        return result;
     }
 
     protected Constant newNameAndType(String name, String type) {
@@ -330,16 +391,107 @@ public class ClassWriter extends ClassVisitor {
         return result;
     }
 
-    protected Constant newMethodHandle() {
-        return null;
+    protected Constant newMethodHandle(int referenceKind, int referenceIndex) {
+        key = new Constant(CONSTANT_MethodHandle, 0, Bytes.merge(
+                Bytes.toByteArray((short) referenceKind),
+                Bytes.toByteArray((short) referenceIndex)), this.constantPool);
+        Constant result = get(key);
+
+        if (result != null)
+            return result;
+
+        if (referenceIndex < 1 || referenceIndex > 9)
+            throw new IllegalArgumentException("Illegal reference kind: " + referenceIndex + ", reference kind " +
+                    "must be in the range 1-9");
+
+        // Check if the reference kind is correct for the given index
+        // Take a look at the JVM Specs
+        Constant value = this.constantPool.get(referenceIndex);
+
+        if (referenceKind < 5) {
+            if (value.getType() != CONSTANT_Fieldref)
+                throw new RuntimeException("Illegal reference index! Value at index: " + referenceIndex + " is " +
+                        "not a CONSTANT_Fieldref!");
+        } else if (referenceKind == 5 || referenceKind == 8) {
+            if (value.getType() != CONSTANT_Methodref)
+                throw new RuntimeException("Illegal reference index! Value at index: " + referenceIndex + " is " +
+                        "not a CONSTANT_Methodref!");
+            if (referenceKind == 5) {
+                String[] split = value.toString().split("&");
+                if (split[1].startsWith("<init>") || split[1].startsWith("<clinit>"))
+                    throw new RuntimeException("Illegal reference index! Value at index: " + referenceIndex + " is " +
+                            "a valid constant but it's name should not be '<init>' or '<clinit>'");
+            } else {
+                if (!value.toString().split("&")[1].startsWith("<init>"))
+                    throw new RuntimeException("Illegal reference index! Value at index: " + referenceIndex + " is " +
+                            "a valid constant but it's name is not '<init>'");
+            }
+        } else if (referenceKind == 6 || referenceKind == 7) {  // We're ignoring the class version here...
+            if (value.getType() != CONSTANT_Methodref ||
+                    this.constantPool.get(referenceIndex).getType() != CONSTANT_InterfaceMethodref)
+                throw new RuntimeException("Illegal reference index! Value at index: " + referenceIndex + " is " +
+                        "not a CONSTANT_Methodref or CONSTANT_InterfaceMethodref!");
+            String[] split = value.toString().split("&");
+            if (split[1].startsWith("<init>") || split[1].startsWith("<clinit>"))
+                throw new RuntimeException("Illegal reference index! Value at index: " + referenceIndex + " is " +
+                        "a valid constant but it's name should not be '<init>' or '<clinit>'");
+        } else if (referenceKind == 9) {
+            if (value.getType() != CONSTANT_InterfaceMethodref)
+                throw new RuntimeException("Illegal reference index! Value at index: " + referenceIndex + " is " +
+                        "not a CONSTANT_InterfaceMethodref!");
+            String[] split = value.toString().split("&");
+            if (split[1].startsWith("<init>") || split[1].startsWith("<clinit>"))
+                throw new RuntimeException("Illegal reference index! Value at index: " + referenceIndex + " is " +
+                        "a valid constant but it's name should not be '<init>' or '<clinit>'");
+        }
+
+        this.index++;
+        result = new Constant(CONSTANT_MethodHandle, this.index, Bytes.merge(
+                Bytes.toByteArray((short) referenceKind),
+                Bytes.toByteArray((short) referenceIndex)), this.constantPool);
+        this.constantPool.add(this.index, result);
+
+        return result;
     }
 
-    protected Constant newMethodType() {
-        return null;
+    protected Constant newMethodType(int descriptorIndex) {
+        key = new Constant(CONSTANT_MethodType, 0, Bytes.toByteArray((short) descriptorIndex), this.constantPool);
+        Constant result = get(key);
+        if (result == null) {
+            if (this.constantPool.get(descriptorIndex).getType() != CONSTANT_Utf8)
+                throw new IllegalArgumentException("Invalid constant at index: " + descriptorIndex
+                        + ". Expected CONSTANT_Utf8.");
+
+            this.index++;
+            result = new Constant(CONSTANT_MethodType, this.index, Bytes.toByteArray((short) descriptorIndex), this.constantPool);
+            this.constantPool.add(this.index, result);
+        }
+        return result;
     }
 
-    protected Constant newInvokeDynamic() {
-        return null;
+    protected Constant newMethodType(String type) {
+        return newMethodType(newUTF(type).getIndex());
+    }
+
+    protected Constant newInvokeDynamic(int bsmIndex, int natIndex) {
+        key = new Constant(CONSTANT_InvokeDynamic, 0, Bytes.merge(
+                Bytes.toByteArray((short) bsmIndex),
+                Bytes.toByteArray((short) natIndex)
+        ), this.constantPool);
+        Constant result = get(key);
+        if (result == null) {
+            if (this.constantPool.get(natIndex).getType() != CONSTANT_NameAndType)
+                throw new IllegalArgumentException("Illegal constant at index: " + natIndex
+                        + ". Expected CONSTANT_NameAndType.");
+
+            this.index++;
+            result = new Constant(CONSTANT_InvokeDynamic, this.index, Bytes.merge(
+                    Bytes.toByteArray((short) bsmIndex),
+                    Bytes.toByteArray((short) natIndex)
+            ), this.constantPool);
+            this.constantPool.add(this.index, result);
+        }
+        return result;
     }
 
     // May be a bit slow but well...
