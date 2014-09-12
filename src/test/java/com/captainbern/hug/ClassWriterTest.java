@@ -2,6 +2,8 @@ package com.captainbern.hug;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class ClassWriterTest {
 
     @Test
@@ -34,6 +36,8 @@ public class ClassWriterTest {
             System.out.println("    Old Value: " + clazz.getDeclaredFields()[0].get(null));
             clazz.getDeclaredFields()[0].set(null, "Changed!");
             System.out.println("    New Value: " + clazz.getDeclaredFields()[0].get(null));
+
+            assertEquals("Changed!", clazz.getDeclaredFields()[0].get(null));
         } catch (Exception e) {
             throw new RuntimeException("Failed to get/set the field!", e);
         }
