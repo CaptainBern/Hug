@@ -9,9 +9,9 @@ public class ClassWriterTest {
     @Test
     public void testClassWriter() {
         ClassWriter writer = new ClassWriter();
-        writer.visit(0 << 16 | 51, 0x0001, "Test", null, "java/lang/Object", null);
+        writer.visit(Opcodes.JDK_7, Opcodes.ACC_PUBLIC, "Test", null, "java/lang/Object", null);
         writer.visitSource("Test.java");
-        writer.visitField(0x0001 + 0x0008, "testField", "Ljava/lang/String;", null, null);
+        writer.visitField(Opcodes.ACC_PUBLIC + Opcodes.ACC_STATIC, "testField", "Ljava/lang/String;", null, null);
 
         byte[] code = writer.getByteCode();
 
