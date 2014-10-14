@@ -12,7 +12,7 @@ Basic usage
 Hug is very easy to use. here's a small code example:
 
 ```Java
-ClassHug hug = new ClassHug("java.lang.Object"); // Can also be raw bytes or an inputstream
+ClassReader hug = new ClassReader("java.lang.Object"); // Can also be raw bytes or an inputstream
 
 for (Member field : hug.getFields()) {
 
